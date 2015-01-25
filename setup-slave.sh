@@ -103,6 +103,12 @@ if [[ -e /vol3 && ! -e /vol ]]; then
   ln -s /vol3 /vol
 fi
 
+# Link Spark's temp dir = SPARK_LOCAL_DIRS = /mnt/spark to /vol0 (if it exists) 
+if [[ -e /vol0 ]]; then
+  rm -rf /mnt/spark
+  ln -s /vol0 /mnt/spark
+fi
+
 # Make data dirs writable by non-root users, such as CDH's hadoop user
 chmod -R a+w /mnt*
 
