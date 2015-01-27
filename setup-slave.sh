@@ -55,6 +55,35 @@ if [[ $instance_type == r3* || $instance_type == i2* || $instance_type == hi1* ]
   fi
 fi
 
+# Use software RAID0 for instances with 2 instance storage volumes
+if [[ -e /dev/sdb && -e /dev/sdc ]]; then
+  # Remove already created mounts and FSes
+  umount /dev/sdb
+  umount /dev/sdc
+ 
+  rm -rf /mnt*
+
+  # Create software RAID0
+  yes | mdadm --create /dev/md/0 --level=stripe --raid-devices=2 /dev/sdb /dev/sdc
+  
+  # Format & mount using ext4, which has the best performance among ext3, ext4, and xfs based
+  # on our shuffle heavy benchmark
+  EXT4_MOUNT_OPTS="defaults,noatime,nodiratime"
+  
+  # To turn TRIM support on, uncomment the following line.
+  #echo '/dev/sdb /mnt  ext4  defaults,noatime,nodiratime,discard 0 0' >> /etc/fstab
+  mkfs.ext4 -E lazy_itable_init=0,lazy_journal_init=0 /dev/md/0
+  
+  mkdir /mnt
+  
+  mount -o $EXT4_MOUNT_OPTS /dev/md/0 /mnt  
+  
+  # Mount on reboot
+  sed '\|^/dev/sdb|d' /etc/fstab > /tmp/temp1
+  sed '\|^/dev/sdc|d' /tmp/temp1 > /etc/fstab
+  echo '/dev/md/0 /mnt  ext4  defaults,noatime,nodiratime,discard 0 0' >> /etc/fstab
+fi
+
 # Mount options to use for ext3 and xfs disks (the ephemeral disks
 # are ext3, but we use xfs for EBS volumes to format them faster)
 XFS_MOUNT_OPTS="defaults,noatime,nodiratime,allocsize=8m"
