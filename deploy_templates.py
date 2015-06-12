@@ -49,7 +49,8 @@ else:
 # Make tachyon_mb as spark_mb for now.
 tachyon_mb = spark_mb
 
-worker_instances = int(os.getenv("SPARK_WORKER_INSTANCES", 1))
+worker_instances_str = os.getenv("SPARK_WORKER_INSTANCES")
+worker_instances = int(worker_instances_str) if worker_instances_str else 1
 # Distribute equally cpu cores among worker instances
 worker_cores = max(slave_cpus / worker_instances, 1)
 
